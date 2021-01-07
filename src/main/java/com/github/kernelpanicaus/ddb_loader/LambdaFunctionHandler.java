@@ -1,6 +1,7 @@
 package com.github.kernelpanicaus.ddb_loader;
 
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.BatchWriteItemOutcome;
@@ -19,7 +20,6 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.google.common.collect.Lists;
 
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +36,29 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
     /**
      * Provide the AWS region which your DynamoDB table is hosted.
      */
-    final static String AWS_REGION = System.getenv("AWS_REGION");
+    static final String AWS_REGION = System.getenv("AWS_REGION");
 
     /**
      * The DynamoDB table name.
      */
     String DYNAMO_TABLE_NAME = System.getenv("DYNAMO_TABLE_NAME");
+
+    static final ClientConfiguration config = new ClientConfiguration()
+            .withMaxConnections(ClientConfiguration.DEFAULT_MAX_CONNECTIONS * 2);
+
+    AmazonS3 s3Client = AmazonS3ClientBuilder
+            .standard()
+            .withClientConfiguration(config)
+            .withRegion(AWS_REGION)
+            .build();
+
+    AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder
+            .standard()
+            .withClientConfiguration(config)
+            .withRegion(AWS_REGION)
+            .build();
+
+    DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
 
     public Report handleRequest(S3Event s3event, Context context) {
         long startTime = System.currentTimeMillis();
@@ -53,11 +70,8 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
         try {
             S3EventNotification.S3EventNotificationRecord record = s3event.getRecords().get(0);
             String srcBucket = record.getS3().getBucket().getName();
-            // Object key may have spaces or unicode non-ASCII characters.
-            String srcKey = record.getS3().getObject().getKey();
-            srcKey = URLDecoder.decode(srcKey, "UTF-8");
+            String srcKey = record.getS3().getObject().getUrlDecodedKey();
 
-            AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withRegion(AWS_REGION).build();
             S3Object s3Object = s3Client.getObject(new GetObjectRequest(srcBucket, srcKey));
             statusReport.setFileSize(s3Object.getObjectMetadata().getContentLength());
 
@@ -65,9 +79,6 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
 
             GZIPInputStream gis = new GZIPInputStream(s3Object.getObjectContent());
             Scanner fileIn = new Scanner(gis);
-
-            AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder.standard().withRegion(AWS_REGION).build();
-            DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
 
             TableWriteItems energyDataTableWriteItems = new TableWriteItems(DYNAMO_TABLE_NAME);
 
