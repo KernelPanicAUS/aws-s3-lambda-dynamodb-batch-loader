@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.kernelpanicaus.ddb_loader</groupId>
   <artifactId>aws-s3-lambda-dynamodb-batch-loader</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0</version>
   <name>aws-s3-lambda-dynamodb-csv-loader</name>
 
   	<dependencies>
