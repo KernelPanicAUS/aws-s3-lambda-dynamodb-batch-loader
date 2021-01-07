@@ -1,4 +1,4 @@
-package de.dengpeng.projects;
+package com.github.kernelpanicaus.ddb_loader;
 
 
 /**
