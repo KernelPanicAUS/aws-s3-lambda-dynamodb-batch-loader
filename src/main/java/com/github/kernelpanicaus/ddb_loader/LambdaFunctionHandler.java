@@ -1,6 +1,5 @@
 package com.github.kernelpanicaus.ddb_loader;
 
-
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -29,7 +28,7 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * The Class LambdaFunctionHandler.
- * This application loads GZIPped CSV file to DynamoDB using AWS Lambda function.
+ * This application loads GZIPped Dynamo JSON file to DynamoDB.
  */
 public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
 
@@ -41,7 +40,12 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
     /**
      * The DynamoDB table name.
      */
-    String DYNAMO_TABLE_NAME = System.getenv("DYNAMO_TABLE_NAME");
+    static final String DYNAMO_TABLE_NAME = System.getenv("DYNAMO_TABLE_NAME");
+
+    /**
+     * Configurable batch size
+     */
+    static final int BATCH_SIZE = Integer.parseInt(System.getenv().getOrDefault("BATCH_SIZE","25"));
 
     static final ClientConfiguration config = new ClientConfiguration()
             .withMaxConnections(ClientConfiguration.DEFAULT_MAX_CONNECTIONS * 2);
@@ -89,7 +93,7 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
                 itemList.add(item);
             }
 
-            for (List<Item> partition : Lists.partition(itemList, 25)) {
+            for (List<Item> partition : Lists.partition(itemList, BATCH_SIZE)) {
                 energyDataTableWriteItems.withItemsToPut(partition);
                 BatchWriteItemOutcome outcome = dynamoDB.batchWriteItem(energyDataTableWriteItems);
 
@@ -98,13 +102,11 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
                     Map<String, List<WriteRequest>> unprocessedItems = outcome.getUnprocessedItems();
 
                     if (outcome.getUnprocessedItems().size() > 0) {
-                        logger.log("Retrieving the unprocessed " + outcome.getUnprocessedItems().size()
-                                + " items.");
+                        logger.log("Retrieving the unprocessed " + outcome.getUnprocessedItems().size() + " items.");
                         outcome = dynamoDB.batchWriteItemUnprocessed(unprocessedItems);
                     }
 
                 } while (outcome.getUnprocessedItems().size() > 0);
-
             }
 
             logger.log("Load finish in " + (System.currentTimeMillis() - startTime) + "ms");
@@ -120,5 +122,4 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
         statusReport.setExecutiongTime(System.currentTimeMillis() - startTime);
         return statusReport;
     }
-
 }
