@@ -46,19 +46,19 @@ public class LambdaFunctionHandler implements RequestHandler<S3Event, Report> {
     static final ClientConfiguration config = new ClientConfiguration()
             .withMaxConnections(ClientConfiguration.DEFAULT_MAX_CONNECTIONS * 2);
 
-    AmazonS3 s3Client = AmazonS3ClientBuilder
+    final AmazonS3 s3Client = AmazonS3ClientBuilder
             .standard()
             .withClientConfiguration(config)
             .withRegion(AWS_REGION)
             .build();
 
-    AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder
+    final AmazonDynamoDB dynamoDBClient = AmazonDynamoDBClientBuilder
             .standard()
             .withClientConfiguration(config)
             .withRegion(AWS_REGION)
             .build();
 
-    DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+    final DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
 
     public Report handleRequest(S3Event s3event, Context context) {
         long startTime = System.currentTimeMillis();
