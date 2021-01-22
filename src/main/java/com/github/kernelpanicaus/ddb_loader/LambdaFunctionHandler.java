@@ -10,7 +10,6 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
@@ -26,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -61,21 +59,6 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
     final DynamoDbClient dynamoDBClient = DynamoDbClient.builder()
             .region(AWS_REGION)
             .build();
-
-    static AttributeValue toAttributeValue(Object value) {
-        if (value == null) return AttributeValue.builder().nul(true).build();
-        if (value instanceof AttributeValue) return (AttributeValue) value;
-        if (value instanceof String) return AttributeValue.builder().s((String) value).build();
-        if (value instanceof Number) return AttributeValue.builder().n(value.toString()).build();
-
-        if (value instanceof Map) return AttributeValue.builder().m(
-                ((Map<String, Object>) value).entrySet().stream().collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> toAttributeValue(e.getValue())
-                ))).build();
-
-        throw new UnsupportedOperationException("Time to impl new path for " + value);
-    }
 
     public void handleRequest(InputStream inputStream, OutputStream outputStream, Context context) {
         // TODO: Add sanity check for dynamo table
@@ -125,22 +108,8 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
             int batchCounter = 0;
             while (fileIn.hasNext()) {
                 var line = fileIn.nextLine();
-//                logger.log(line + "\n");
                 JSONObject jsonLine = (JSONObject) parser.parse(line);
                 JSONObject jsonItem = (JSONObject) jsonLine.get("Item");
-//                var item = jsonLine.getJSONObject("Item");
-
-//                jsonLine.get("Item")
-//                HashMap<String, AttributeValue> result = (HashMap<String, AttributeValue>) JacksonUtils.fromJsonString(line, HashMap.class).get("Item")
-//                        .entrySet()
-//                        .stream()
-//                        .collect(Collectors.toMap(
-//                                entry -> entry.toString(),
-//                                entry -> entry
-//                        ));
-
-//                logger.log(jsonItem.toString() + "\n");
-//                logger.log(jsonItem.getClass().toString() + "\n");
 
                 WriteRequest item = WriteRequest.builder()
                         .putRequest(PutRequest.builder().item(jsonItem).build())
@@ -158,8 +127,7 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
                             .requestItems(Map.of(DYNAMO_TABLE_NAME, itemList))
                             .build();
 
-                    logger.log("Sending Batch "+ batchCounter +" \n");
-//                    logger.log(batchItemRequest.toString() + "\n");
+                    logger.log("Sending Batch " + batchCounter + " \n");
 
                     var outcome = dynamoDBClient.batchWriteItem(batchItemRequest);
 
@@ -169,7 +137,7 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
                                 .build();
 
                         if (outcome.unprocessedItems().size() > 0) {
-                            logger.log("Retrieving the unprocessed " + outcome.unprocessedItems().size() + " items, batch ["+ batchCounter+"].");
+                            logger.log("Retrieving the unprocessed " + outcome.unprocessedItems().size() + " items, batch [" + batchCounter + "].");
                             outcome = dynamoDBClient.batchWriteItem(unprocessedItemsRequest);
                         }
 
@@ -188,7 +156,6 @@ public class LambdaFunctionHandler implements RequestStreamHandler {
         } catch (Exception ex) {
             logger.log(ex.getMessage());
         }
-
         statusReport.setExecutiongTime(System.currentTimeMillis() - startTime);
     }
 }
