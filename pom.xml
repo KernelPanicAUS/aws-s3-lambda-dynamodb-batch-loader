@@ -19,7 +19,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
-            <version>1.11.933</version>
+            <version>1.11.941</version>
         </dependency>
         <dependency>
             <groupId>net.sf.opencsv</groupId>
