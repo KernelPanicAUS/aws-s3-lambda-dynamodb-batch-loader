@@ -5,7 +5,10 @@
     "helpers:pinGitHubActionDigests",
     ":semanticCommits"
   ],
-  "rebaseStalePrs": true,
+  "rebaseStalePrs": true,  
+  "pre-commit": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "updateTypes": [
