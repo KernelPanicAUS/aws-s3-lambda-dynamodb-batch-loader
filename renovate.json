@@ -18,5 +18,5 @@
       "automerge": true
     }
   ],
-  "labels": ["renovate", "dependency-update"]
+  "labels": ["renovate", "dependency-update", "automerge"]
 }
