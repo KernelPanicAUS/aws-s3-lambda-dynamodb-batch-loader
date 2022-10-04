@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits"
+  ],
+  "rebaseStalePrs": true,
+  "packageRules": [
+    {
+      "updateTypes": [
+        "major",
+        "minor",
+        "patch",
+        "digest",
+        "pin"
+      ],
+      "automerge": true
+    }
+  ],
+  "labels": ["renovate", "dependency-update"]
+}
