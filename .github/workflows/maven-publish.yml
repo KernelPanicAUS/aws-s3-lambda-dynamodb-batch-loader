@@ -18,6 +18,8 @@ jobs:
       uses: actions/setup-java@a18c333f3f14249953dab3e186e5e21bf3390f1d # tag=v3
       with:
         java-version: 11
+        distribution: "corretto"
+        cache: "maven"
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
