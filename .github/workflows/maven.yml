@@ -20,6 +20,9 @@ jobs:
       uses: actions/setup-java@a18c333f3f14249953dab3e186e5e21bf3390f1d # tag=v3
       with:
         java-version: 11
+        distribution: "corretto"
+        cache: "maven"
+        
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
